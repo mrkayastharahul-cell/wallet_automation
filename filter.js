@@ -20,8 +20,7 @@
   }
 
   function playSound() {
-    const audio = new Audio("https://actions.google.com/sounds/v1/alarms/beep_short.ogg");
-    audio.play();
+    new Audio("https://actions.google.com/sounds/v1/alarms/beep_short.ogg").play();
   }
 
   // UI
@@ -40,25 +39,15 @@
   `;
 
   box.innerHTML = `
-    <div style="display:flex;justify-content:space-between;">
-      <span>Auto</span>
-      <span id="light" style="width:10px;height:10px;border-radius:50%;background:red;"></span>
-    </div>
-
     <input id="amt" placeholder="Enter amount" style="width:100%;margin-top:5px;color:black;background:white;" />
-    <div id="showAmt" style="margin-top:5px;font-size:12px;color:black;"></div>
-
     <button id="start" style="width:100%;margin-top:5px;background:green;color:#fff;">Start</button>
     <button id="stop" style="width:100%;margin-top:5px;background:red;color:#fff;">Stop</button>
-
-    <div id="status" style="margin-top:5px;font-size:12px;">Checking access...</div>
+    <div id="status">Idle</div>
   `;
 
   document.body.appendChild(box);
 
-  const light = document.getElementById("light");
   const status = document.getElementById("status");
-  const showAmt = document.getElementById("showAmt");
 
   checkAccess().then(allowed => {
     if (!allowed) {
@@ -66,71 +55,59 @@
       return;
     }
 
-    status.innerText = "Active";
-
     document.getElementById("start").onclick = () => {
       target = document.getElementById("amt").value.trim();
-
-      if (!target) return alert("Enter amount");
-
       displayTarget = "₹" + target;
 
-      showAmt.innerText = "Target: " + displayTarget;
-
       running = true;
-      light.style.background = "lime";
       status.innerText = "Running";
       loop();
     };
 
     document.getElementById("stop").onclick = () => {
       running = false;
-      light.style.background = "red";
       status.innerText = "Stopped";
     };
   });
 
   function clickOtpUpi() {
-    const tabs = document.querySelectorAll(".tab-title");
-    for (let tab of tabs) {
-      if (tab.innerText.includes("OTP-UPI")) {
-        tab.click();
-        return true;
-      }
-    }
-    return false;
+    document.querySelectorAll(".tab-title").forEach(t => {
+      if (t.innerText.includes("OTP-UPI")) t.click();
+    });
   }
 
-  // 🔥 FIND ALL MATCHES
-  function getMatchingContainers() {
-    const elements = document.querySelectorAll("body *");
-    let containers = [];
-
-    for (let el of elements) {
-      let txt = el.innerText?.trim();
-
-      if (txt === displayTarget) {
-        let container = el.closest("div");
-        if (container) containers.push(container);
-      }
-    }
-
-    return containers;
+  // 🔥 FIND ROWS (IMPORTANT FIX)
+  function getRows() {
+    return Array.from(document.querySelectorAll("button"))
+      .map(btn => btn.closest("div")) // go up
+      .filter(el => el && el.innerText.includes("₹"));
   }
 
-  // 🔥 CLICK ALL BUY BUTTONS ONE BY ONE
-  async function clickAllBuy() {
-    const targets = getMatchingContainers();
+  // 🔥 FILTER ONLY TARGET ROWS
+  function filterRows(rows) {
+    rows.forEach(row => {
+      if (row.innerText.includes(displayTarget)) {
+        row.style.display = "";
+      } else {
+        row.style.display = "none";
+      }
+    });
+  }
 
-    if (targets.length === 0) return false;
+  // 🔥 CLICK BUY PROPERLY
+  async function clickAllMatching(rows) {
+    let matched = rows.filter(r => r.innerText.includes(displayTarget));
+
+    if (matched.length === 0) return false;
 
     playSound();
 
-    for (let container of targets) {
-      let buyBtn = container.querySelector("button");
+    for (let row of matched) {
+      let btn = row.querySelector("button");
 
-      if (buyBtn && buyBtn.innerText.includes("Buy")) {
-        buyBtn.click();
+      if (btn) {
+        // REAL CLICK (important)
+        btn.dispatchEvent(new MouseEvent("click", { bubbles: true }));
 
         await sleep(1200);
 
@@ -147,15 +124,17 @@
     while (running) {
 
       clickOtpUpi();
-
       await sleep(800);
 
-      let success = await clickAllBuy();
+      let rows = getRows();
+
+      filterRows(rows);
+
+      let success = await clickAllMatching(rows);
 
       if (success) {
         status.innerText = "Success";
         running = false;
-        light.style.background = "red";
         return;
       }
 
