@@ -2,8 +2,6 @@
   if (window.__FILTER__) return;
   window.__FILTER__ = true;
 
-  console.log("Bot Loaded");
-
   let running = false;
   let target = "";
 
@@ -47,7 +45,6 @@
     </div>
 
     <input id="amt" placeholder="Enter amount" style="width:100%;margin-top:5px;color:black;background:white;" />
-
     <div id="showAmt" style="margin-top:5px;font-size:12px;color:black;"></div>
 
     <button id="start" style="width:100%;margin-top:5px;background:green;color:#fff;">Start</button>
@@ -89,7 +86,6 @@
     };
   });
 
-  // CLICK OTP-UPI
   function clickOtpUpi() {
     const tabs = document.querySelectorAll(".tab-title");
     for (let tab of tabs) {
@@ -101,68 +97,73 @@
     return false;
   }
 
-  // 🔥 SAFE FILTER (ONLY HIDE AMOUNT BLOCKS)
-  function filterAmounts() {
+  // STRICT FILTER (kept same as before)
+  function filterExactAmount() {
     const elements = document.querySelectorAll("body *");
 
     elements.forEach(el => {
-      let txt = el.innerText?.trim();
+      const txt = el.innerText?.trim();
 
-      // Only target numeric-like elements
       if (/^\d+(\.\d+)?$/.test(txt)) {
-        let container = el.closest("div");
+        const container = el.closest("div");
         if (!container) return;
 
         if (txt === target) {
-          container.style.display = ""; // show
+          container.style.display = "";
         } else {
-          container.style.display = "none"; // hide others
+          container.style.display = "none";
         }
       }
     });
   }
 
-  // FIND + CLICK
-  async function findAndClick() {
+  // 🔥 NEW MULTI-CLICK LOGIC
+  async function clickAllMatchingBuy() {
     const elements = document.querySelectorAll("body *");
 
+    let targets = [];
+
+    // collect all matching containers
     for (let el of elements) {
       let txt = el.innerText?.trim();
 
       if (txt === target) {
-        playSound();
-
         let container = el.closest("div");
-        if (!container) continue;
+        if (container) targets.push(container);
+      }
+    }
 
-        let buyBtn = container.querySelector("button");
+    if (targets.length === 0) return false;
 
-        if (buyBtn && buyBtn.innerText.includes("Buy")) {
-          for (let i = 0; i < 3; i++) {
-            buyBtn.click();
-            await sleep(500);
+    playSound();
 
-            if (document.body.innerText.includes("Select Payment Method")) {
-              return true;
-            }
-          }
+    // click each BUY one by one
+    for (let container of targets) {
+      let buyBtn = container.querySelector("button");
+
+      if (buyBtn && buyBtn.innerText.includes("Buy")) {
+        buyBtn.click();
+
+        await sleep(1200);
+
+        if (document.body.innerText.includes("Select Payment Method")) {
+          return true; // success
         }
       }
     }
+
     return false;
   }
 
-  // LOOP
   async function loop() {
     while (running) {
-
       clickOtpUpi();
 
       await sleep(800);
 
-      filterAmounts(); // safe filtering
+      filterExactAmount();
 
-      let success = await findAndClick();
+      let success = await clickAllMatchingBuy();
 
       if (success) {
         status.innerText = "Success";
@@ -171,7 +172,6 @@
         return;
       }
 
-      // if not found → loop continues automatically
       await sleep(1000);
     }
   }
