@@ -4,6 +4,7 @@
 
   let running = false;
   let target = "";
+  let displayTarget = "";
 
   const UID = localStorage.getItem("bot_uid") || prompt("Enter UID");
   localStorage.setItem("bot_uid", UID);
@@ -69,9 +70,12 @@
 
     document.getElementById("start").onclick = () => {
       target = document.getElementById("amt").value.trim();
+
       if (!target) return alert("Enter amount");
 
-      showAmt.innerText = "Target: " + target;
+      displayTarget = "₹" + target;
+
+      showAmt.innerText = "Target: " + displayTarget;
 
       running = true;
       light.style.background = "lime";
@@ -97,47 +101,31 @@
     return false;
   }
 
-  // STRICT FILTER (kept same as before)
-  function filterExactAmount() {
+  // 🔥 FIND ALL MATCHES
+  function getMatchingContainers() {
     const elements = document.querySelectorAll("body *");
+    let containers = [];
 
-    elements.forEach(el => {
-      const txt = el.innerText?.trim();
-
-      if (/^\d+(\.\d+)?$/.test(txt)) {
-        const container = el.closest("div");
-        if (!container) return;
-
-        if (txt === target) {
-          container.style.display = "";
-        } else {
-          container.style.display = "none";
-        }
-      }
-    });
-  }
-
-  // 🔥 NEW MULTI-CLICK LOGIC
-  async function clickAllMatchingBuy() {
-    const elements = document.querySelectorAll("body *");
-
-    let targets = [];
-
-    // collect all matching containers
     for (let el of elements) {
       let txt = el.innerText?.trim();
 
-      if (txt === target) {
+      if (txt === displayTarget) {
         let container = el.closest("div");
-        if (container) targets.push(container);
+        if (container) containers.push(container);
       }
     }
+
+    return containers;
+  }
+
+  // 🔥 CLICK ALL BUY BUTTONS ONE BY ONE
+  async function clickAllBuy() {
+    const targets = getMatchingContainers();
 
     if (targets.length === 0) return false;
 
     playSound();
 
-    // click each BUY one by one
     for (let container of targets) {
       let buyBtn = container.querySelector("button");
 
@@ -147,7 +135,7 @@
         await sleep(1200);
 
         if (document.body.innerText.includes("Select Payment Method")) {
-          return true; // success
+          return true;
         }
       }
     }
@@ -157,13 +145,12 @@
 
   async function loop() {
     while (running) {
+
       clickOtpUpi();
 
       await sleep(800);
 
-      filterExactAmount();
-
-      let success = await clickAllMatchingBuy();
+      let success = await clickAllBuy();
 
       if (success) {
         status.innerText = "Success";
