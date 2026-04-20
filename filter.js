@@ -48,9 +48,9 @@
       <span id="light" style="width:10px;height:10px;border-radius:50%;background:red;"></span>
     </div>
 
-    <input id="amt" placeholder="Enter amount" style="width:100%;margin-top:5px;" />
+    <input id="amt" placeholder="Enter amount" style="width:100%;margin-top:5px;color:black;background:white;" />
 
-    <div id="showAmt" style="margin-top:5px;font-size:12px;color:yellow;"></div>
+    <div id="showAmt" style="margin-top:5px;font-size:12px;color:black;"></div>
 
     <button id="start" style="width:100%;margin-top:5px;background:green;color:#fff;">Start</button>
     <button id="stop" style="width:100%;margin-top:5px;background:red;color:#fff;">Stop</button>
@@ -147,7 +147,7 @@
     return false;
   }
 
-  // 🔁 LOOP
+  // 🔁 LOOP (NO RELOAD, ONLY OTP CLICK)
   async function loop() {
     while (running) {
 
@@ -166,8 +166,7 @@
         return;
       }
 
-      await sleep(1200);
-      location.reload();
+      await sleep(1000);
     }
   }
 
