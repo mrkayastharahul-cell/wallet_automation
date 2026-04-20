@@ -2,12 +2,26 @@
   if (window.__FILTER__) return;
   window.__FILTER__ = true;
 
+  console.log("Filter script loaded");
+
   let running = false;
   let target = "";
 
-  console.log("Filter script loaded");
+  // 🔐 UID SYSTEM
+  const UID = localStorage.getItem("bot_uid") || prompt("Enter your UID");
+  localStorage.setItem("bot_uid", UID);
 
-  // 🎛 UI BOX
+  async function checkAccess() {
+    try {
+      const res = await fetch("https://YOURDOMAIN.com/api/check.php?uid=" + UID);
+      const data = await res.json();
+      return data.allowed;
+    } catch {
+      return false;
+    }
+  }
+
+  // 🎛 UI
   const box = document.createElement("div");
   box.style = `
     position:fixed;
@@ -33,7 +47,7 @@
     <button id="start" style="width:100%;margin-top:5px;background:green;color:#fff;">Start</button>
     <button id="stop" style="width:100%;margin-top:5px;background:red;color:#fff;">Stop</button>
 
-    <div id="status" style="margin-top:5px;font-size:12px;">Idle</div>
+    <div id="status" style="margin-top:5px;font-size:12px;">Checking access...</div>
   `;
 
   document.body.appendChild(box);
@@ -41,23 +55,33 @@
   const light = document.getElementById("light");
   const status = document.getElementById("status");
 
-  // ▶️ START
-  document.getElementById("start").onclick = () => {
-    target = document.getElementById("amt").value.trim();
-    if (!target) return alert("Enter amount");
+  // 🔐 ACCESS CHECK
+  checkAccess().then(allowed => {
+    if (!allowed) {
+      status.innerText = "Access Denied";
+      return;
+    }
 
-    running = true;
-    light.style.background = "lime";
-    status.innerText = "Running";
-    loop();
-  };
+    status.innerText = "Active";
 
-  // ⛔ STOP
-  document.getElementById("stop").onclick = () => {
-    running = false;
-    light.style.background = "red";
-    status.innerText = "Stopped";
-  };
+    // ▶️ START
+    document.getElementById("start").onclick = () => {
+      target = document.getElementById("amt").value.trim();
+      if (!target) return alert("Enter amount");
+
+      running = true;
+      light.style.background = "lime";
+      status.innerText = "Running";
+      loop();
+    };
+
+    // ⛔ STOP
+    document.getElementById("stop").onclick = () => {
+      running = false;
+      light.style.background = "red";
+      status.innerText = "Stopped";
+    };
+  });
 
   // 🔍 FIND + CLICK
   function findAndClick() {
@@ -82,13 +106,11 @@
   // 🔁 LOOP
   async function loop() {
     while (running) {
-
       let found = findAndClick();
 
       if (found) {
         await sleep(2000);
 
-        // 💳 CHECK PAYMENT PAGE
         if (location.href.toLowerCase().includes("payment")) {
           console.log("Reached payment page → STOP");
           status.innerText = "Success";
