@@ -7,7 +7,6 @@
   let running = false;
   let target = "";
 
-  // 🔐 UID
   const UID = localStorage.getItem("bot_uid") || prompt("Enter UID");
   localStorage.setItem("bot_uid", UID);
 
@@ -21,13 +20,12 @@
     }
   }
 
-  // 🔊 SOUND
   function playSound() {
     const audio = new Audio("https://actions.google.com/sounds/v1/alarms/beep_short.ogg");
     audio.play();
   }
 
-  // 🎛 UI
+  // UI
   const box = document.createElement("div");
   box.style = `
     position:fixed;
@@ -64,7 +62,6 @@
   const status = document.getElementById("status");
   const showAmt = document.getElementById("showAmt");
 
-  // 🔐 ACCESS CHECK
   checkAccess().then(allowed => {
     if (!allowed) {
       status.innerText = "Access Denied";
@@ -92,7 +89,7 @@
     };
   });
 
-  // 🔁 CLICK OTP-UPI
+  // CLICK OTP-UPI
   function clickOtpUpi() {
     const tabs = document.querySelectorAll(".tab-title");
     for (let tab of tabs) {
@@ -104,7 +101,28 @@
     return false;
   }
 
-  // 🔍 FIND + CLICK BUY
+  // 🔥 SAFE FILTER (ONLY HIDE AMOUNT BLOCKS)
+  function filterAmounts() {
+    const elements = document.querySelectorAll("body *");
+
+    elements.forEach(el => {
+      let txt = el.innerText?.trim();
+
+      // Only target numeric-like elements
+      if (/^\d+(\.\d+)?$/.test(txt)) {
+        let container = el.closest("div");
+        if (!container) return;
+
+        if (txt === target) {
+          container.style.display = ""; // show
+        } else {
+          container.style.display = "none"; // hide others
+        }
+      }
+    });
+  }
+
+  // FIND + CLICK
   async function findAndClick() {
     const elements = document.querySelectorAll("body *");
 
@@ -134,13 +152,15 @@
     return false;
   }
 
-  // 🔁 LOOP (NO RELOAD)
+  // LOOP
   async function loop() {
     while (running) {
 
       clickOtpUpi();
 
       await sleep(800);
+
+      filterAmounts(); // safe filtering
 
       let success = await findAndClick();
 
@@ -151,6 +171,7 @@
         return;
       }
 
+      // if not found → loop continues automatically
       await sleep(1000);
     }
   }
