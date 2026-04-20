@@ -4,7 +4,6 @@
 
   let running = false;
   let target = "";
-  let displayTarget = "";
 
   const UID = localStorage.getItem("bot_uid") || prompt("Enter UID");
   localStorage.setItem("bot_uid", UID);
@@ -29,19 +28,18 @@
     position:fixed;
     bottom:20px;
     right:20px;
-    width:220px;
+    width:200px;
     background:#111;
     color:#fff;
     padding:10px;
     border-radius:10px;
     z-index:999999;
-    font-family:sans-serif;
   `;
 
   box.innerHTML = `
-    <input id="amt" placeholder="Enter amount" style="width:100%;margin-top:5px;color:black;background:white;" />
-    <button id="start" style="width:100%;margin-top:5px;background:green;color:#fff;">Start</button>
-    <button id="stop" style="width:100%;margin-top:5px;background:red;color:#fff;">Stop</button>
+    <input id="amt" placeholder="Enter amount" style="width:100%;color:black;background:white;" />
+    <button id="start" style="width:100%;background:green;color:white;">Start</button>
+    <button id="stop" style="width:100%;background:red;color:white;">Stop</button>
     <div id="status">Idle</div>
   `;
 
@@ -51,14 +49,12 @@
 
   checkAccess().then(allowed => {
     if (!allowed) {
-      status.innerText = "Access Denied";
+      status.innerText = "Denied";
       return;
     }
 
     document.getElementById("start").onclick = () => {
       target = document.getElementById("amt").value.trim();
-      displayTarget = "₹" + target;
-
       running = true;
       status.innerText = "Running";
       loop();
@@ -76,44 +72,46 @@
     });
   }
 
-  // 🔥 FIND ROWS (IMPORTANT FIX)
-  function getRows() {
-    return Array.from(document.querySelectorAll("button"))
-      .map(btn => btn.closest("div")) // go up
-      .filter(el => el && el.innerText.includes("₹"));
-  }
+  // 🔥 FINAL FIND FUNCTION
+  function findMatchingRows(target) {
+    const buttons = document.querySelectorAll("button");
+    let matches = [];
 
-  // 🔥 FILTER ONLY TARGET ROWS
-  function filterRows(rows) {
-    rows.forEach(row => {
-      if (row.innerText.includes(displayTarget)) {
-        row.style.display = "";
-      } else {
-        row.style.display = "none";
+    buttons.forEach(btn => {
+      let row = btn.closest("div");
+      if (!row) return;
+
+      let text = row.innerText;
+
+      // extract numbers from row
+      let numbers = text.match(/\d+/g);
+      if (!numbers) return;
+
+      if (numbers.includes(target)) {
+        matches.push({
+          row: row,
+          button: btn
+        });
       }
     });
+
+    return matches;
   }
 
-  // 🔥 CLICK BUY PROPERLY
-  async function clickAllMatching(rows) {
-    let matched = rows.filter(r => r.innerText.includes(displayTarget));
+  async function clickMatches() {
+    const matches = findMatchingRows(target);
 
-    if (matched.length === 0) return false;
+    if (matches.length === 0) return false;
 
     playSound();
 
-    for (let row of matched) {
-      let btn = row.querySelector("button");
+    for (let item of matches) {
+      item.button.click();
 
-      if (btn) {
-        // REAL CLICK (important)
-        btn.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      await sleep(1200);
 
-        await sleep(1200);
-
-        if (document.body.innerText.includes("Select Payment Method")) {
-          return true;
-        }
+      if (document.body.innerText.includes("Select Payment Method")) {
+        return true;
       }
     }
 
@@ -122,15 +120,11 @@
 
   async function loop() {
     while (running) {
-
       clickOtpUpi();
+
       await sleep(800);
 
-      let rows = getRows();
-
-      filterRows(rows);
-
-      let success = await clickAllMatching(rows);
+      let success = await clickMatches();
 
       if (success) {
         status.innerText = "Success";
