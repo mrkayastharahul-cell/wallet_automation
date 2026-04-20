@@ -72,7 +72,7 @@
     return rows;
   }
 
-  // ===== SAFE FILTER (ONLY AMOUNT ROWS) =====
+  // ===== FILTER ONLY MATCHED ROWS =====
   function filterRows(rows) {
     const buttons = document.querySelectorAll("button");
 
@@ -103,7 +103,10 @@
 
         await sleep(1200);
 
+        // 🔴 HARD STOP ON PAYMENT PAGE
         if (document.body.innerText.includes("Select Payment Method")) {
+          running = false;
+          status.innerText = "Stopped (Payment Page)";
           return true;
         }
       }
@@ -115,6 +118,14 @@
   // ===== LOOP =====
   async function loop() {
     while (running) {
+
+      // 🔴 SAFETY STOP
+      if (document.body.innerText.includes("Select Payment Method")) {
+        running = false;
+        status.innerText = "Stopped (Payment Page)";
+        return;
+      }
+
       clickOtpUpi();
 
       await sleep(800);
@@ -126,11 +137,7 @@
 
         let success = await clickRows(rows);
 
-        if (success) {
-          status.innerText = "Success";
-          running = false;
-          return;
-        }
+        if (success) return;
       }
 
       await sleep(1000);
