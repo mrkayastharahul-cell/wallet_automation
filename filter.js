@@ -21,13 +21,19 @@
     }
   }
 
+  // 🔊 SOUND
+  function playSound() {
+    const audio = new Audio("https://actions.google.com/sounds/v1/alarms/beep_short.ogg");
+    audio.play();
+  }
+
   // 🎛 UI
   const box = document.createElement("div");
   box.style = `
     position:fixed;
     bottom:20px;
     right:20px;
-    width:200px;
+    width:220px;
     background:#111;
     color:#fff;
     padding:10px;
@@ -44,6 +50,8 @@
 
     <input id="amt" placeholder="Enter amount" style="width:100%;margin-top:5px;" />
 
+    <div id="showAmt" style="margin-top:5px;font-size:12px;color:yellow;"></div>
+
     <button id="start" style="width:100%;margin-top:5px;background:green;color:#fff;">Start</button>
     <button id="stop" style="width:100%;margin-top:5px;background:red;color:#fff;">Stop</button>
 
@@ -54,8 +62,9 @@
 
   const light = document.getElementById("light");
   const status = document.getElementById("status");
+  const showAmt = document.getElementById("showAmt");
 
-  // 🔐 CHECK ACCESS
+  // 🔐 ACCESS
   checkAccess().then(allowed => {
     if (!allowed) {
       status.innerText = "Access Denied";
@@ -64,10 +73,11 @@
 
     status.innerText = "Active";
 
-    // ▶️ START
     document.getElementById("start").onclick = () => {
       target = document.getElementById("amt").value.trim();
       if (!target) return alert("Enter amount");
+
+      showAmt.innerText = "Target: " + target;
 
       running = true;
       light.style.background = "lime";
@@ -75,7 +85,6 @@
       loop();
     };
 
-    // ⛔ STOP
     document.getElementById("stop").onclick = () => {
       running = false;
       light.style.background = "red";
@@ -83,20 +92,55 @@
     };
   });
 
-  // 🔍 FIND + CLICK
-  function findAndClick() {
+  // 🔁 CLICK OTP-UPI
+  function clickOtpUpi() {
+    const tabs = document.querySelectorAll(".tab-title");
+    for (let tab of tabs) {
+      if (tab.innerText.includes("OTP-UPI")) {
+        tab.click();
+        return true;
+      }
+    }
+    return false;
+  }
+
+  // 🎯 SHOW ONLY MATCH
+  function filterOnlyTarget() {
+    const elements = document.querySelectorAll("body *");
+
+    elements.forEach(el => {
+      let txt = el.innerText?.trim();
+
+      if (txt && txt !== target) {
+        el.style.display = "none";
+      }
+    });
+  }
+
+  // 🔍 FIND + CLICK (WITH RETRY)
+  async function findAndClick() {
     const elements = document.querySelectorAll("body *");
 
     for (let el of elements) {
       let txt = el.innerText?.trim();
 
       if (txt === target) {
-        let btn = el.closest("div")?.querySelector("button");
+        playSound();
 
-        if (btn) {
-          console.log("Match found → Clicking BUY:", target);
-          btn.click();
-          return true;
+        let container = el.closest("div");
+        if (!container) continue;
+
+        let buyBtn = container.querySelector("button");
+
+        if (buyBtn && buyBtn.innerText.includes("Buy")) {
+          for (let i = 0; i < 3; i++) {
+            buyBtn.click();
+            await sleep(500);
+
+            if (document.body.innerText.includes("Select Payment Method")) {
+              return true;
+            }
+          }
         }
       }
     }
@@ -106,17 +150,20 @@
   // 🔁 LOOP
   async function loop() {
     while (running) {
-      let found = findAndClick();
 
-      if (found) {
-        await sleep(2000);
+      clickOtpUpi();
 
-        if (location.href.toLowerCase().includes("payment")) {
-          status.innerText = "Success";
-          running = false;
-          light.style.background = "red";
-          return;
-        }
+      await sleep(800);
+
+      filterOnlyTarget();
+
+      let success = await findAndClick();
+
+      if (success) {
+        status.innerText = "Success";
+        running = false;
+        light.style.background = "red";
+        return;
       }
 
       await sleep(1200);
