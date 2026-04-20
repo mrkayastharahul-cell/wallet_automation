@@ -2,20 +2,20 @@
   if (window.__FILTER__) return;
   window.__FILTER__ = true;
 
-  console.log("Filter script loaded");
+  console.log("Bot Loaded");
 
   let running = false;
   let target = "";
 
-  // 🔐 UID SYSTEM
-  const UID = localStorage.getItem("bot_uid") || prompt("Enter your UID");
+  // 🔐 UID
+  const UID = localStorage.getItem("bot_uid") || prompt("Enter UID");
   localStorage.setItem("bot_uid", UID);
 
   async function checkAccess() {
     try {
-      const res = await fetch("https://YOURDOMAIN.com/api/check.php?uid=" + UID);
+      const res = await fetch("https://raw.githubusercontent.com/mrkayastharahul-cell/wallet_automation/main/users.json");
       const data = await res.json();
-      return data.allowed;
+      return data.allowed.includes(UID);
     } catch {
       return false;
     }
@@ -55,7 +55,7 @@
   const light = document.getElementById("light");
   const status = document.getElementById("status");
 
-  // 🔐 ACCESS CHECK
+  // 🔐 CHECK ACCESS
   checkAccess().then(allowed => {
     if (!allowed) {
       status.innerText = "Access Denied";
@@ -112,7 +112,6 @@
         await sleep(2000);
 
         if (location.href.toLowerCase().includes("payment")) {
-          console.log("Reached payment page → STOP");
           status.innerText = "Success";
           running = false;
           light.style.background = "red";
