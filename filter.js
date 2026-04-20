@@ -5,24 +5,7 @@
   let running = false;
   let target = "";
 
-  const UID = localStorage.getItem("bot_uid") || prompt("Enter UID");
-  localStorage.setItem("bot_uid", UID);
-
-  async function checkAccess() {
-    try {
-      const res = await fetch("https://raw.githubusercontent.com/mrkayastharahul-cell/wallet_automation/main/users.json");
-      const data = await res.json();
-      return data.allowed.includes(UID);
-    } catch {
-      return false;
-    }
-  }
-
-  function playSound() {
-    new Audio("https://actions.google.com/sounds/v1/alarms/beep_short.ogg").play();
-  }
-
-  // UI
+  // ===== UI =====
   const box = document.createElement("div");
   box.style = `
     position:fixed;
@@ -34,12 +17,13 @@
     padding:10px;
     border-radius:10px;
     z-index:999999;
+    font-family:sans-serif;
   `;
 
   box.innerHTML = `
-    <input id="amt" placeholder="Enter amount" style="width:100%;color:black;background:white;" />
-    <button id="start" style="width:100%;background:green;color:white;">Start</button>
-    <button id="stop" style="width:100%;background:red;color:white;">Stop</button>
+    <input id="amt" placeholder="Enter amount" style="width:100%;margin-bottom:5px;color:black;background:white;" />
+    <button id="start" style="width:100%;background:green;color:white;margin-bottom:5px;">Start</button>
+    <button id="stop" style="width:100%;background:red;color:white;margin-bottom:5px;">Stop</button>
     <div id="status">Idle</div>
   `;
 
@@ -47,66 +31,81 @@
 
   const status = document.getElementById("status");
 
-  checkAccess().then(allowed => {
-    if (!allowed) {
-      status.innerText = "Denied";
-      return;
-    }
+  document.getElementById("start").onclick = () => {
+    target = document.getElementById("amt").value.trim();
+    if (!target) return alert("Enter amount");
 
-    document.getElementById("start").onclick = () => {
-      target = document.getElementById("amt").value.trim();
-      running = true;
-      status.innerText = "Running";
-      loop();
-    };
+    running = true;
+    status.innerText = "Running";
+    loop();
+  };
 
-    document.getElementById("stop").onclick = () => {
-      running = false;
-      status.innerText = "Stopped";
-    };
-  });
+  document.getElementById("stop").onclick = () => {
+    running = false;
+    status.innerText = "Stopped";
+  };
 
+  // ===== CLICK OTP-UPI =====
   function clickOtpUpi() {
-    document.querySelectorAll(".tab-title").forEach(t => {
-      if (t.innerText.includes("OTP-UPI")) t.click();
+    document.querySelectorAll(".tab-title").forEach(tab => {
+      if (tab.innerText.includes("OTP-UPI")) tab.click();
     });
   }
 
-  // 🔥 FINAL FIND FUNCTION
-  function findMatchingRows(target) {
+  // ===== FIND MATCHES =====
+  function getMatches() {
     const buttons = document.querySelectorAll("button");
     let matches = [];
 
     buttons.forEach(btn => {
-      let row = btn.closest("div");
+      if (!btn.innerText.includes("Buy")) return;
+
+      const row = btn.closest("div");
       if (!row) return;
 
-      let text = row.innerText;
+      const text = row.innerText;
 
-      // extract numbers from row
-      let numbers = text.match(/\d+/g);
-      if (!numbers) return;
+      // extract numbers
+      const nums = text.match(/\d+/g);
+      if (!nums) return;
 
-      if (numbers.includes(target)) {
-        matches.push({
-          row: row,
-          button: btn
-        });
+      if (nums.includes(target)) {
+        matches.push({ row, btn });
       }
     });
 
     return matches;
   }
 
-  async function clickMatches() {
-    const matches = findMatchingRows(target);
+  // ===== FILTER ONLY MATCHED ROWS =====
+  function filterRows(matches) {
+    const buttons = document.querySelectorAll("button");
+
+    buttons.forEach(btn => {
+      const row = btn.closest("div");
+      if (!row) return;
+
+      const isMatch = matches.some(m => m.row === row);
+
+      row.style.display = isMatch ? "" : "none";
+    });
+  }
+
+  // ===== PROCESS =====
+  async function process() {
+    const matches = getMatches();
 
     if (matches.length === 0) return false;
 
-    playSound();
+    // filter UI
+    filterRows(matches);
 
+    // sound
+    new Audio("https://actions.google.com/sounds/v1/alarms/beep_short.ogg").play();
+
+    // click each buy
     for (let item of matches) {
-      item.button.click();
+      item.btn.click();
 
       await sleep(1200);
 
@@ -118,13 +117,14 @@
     return false;
   }
 
+  // ===== LOOP =====
   async function loop() {
     while (running) {
       clickOtpUpi();
 
       await sleep(800);
 
-      let success = await clickMatches();
+      let success = await process();
 
       if (success) {
         status.innerText = "Success";
