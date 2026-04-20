@@ -64,7 +64,7 @@
   const status = document.getElementById("status");
   const showAmt = document.getElementById("showAmt");
 
-  // 🔐 ACCESS
+  // 🔐 ACCESS CHECK
   checkAccess().then(allowed => {
     if (!allowed) {
       status.innerText = "Access Denied";
@@ -104,20 +104,7 @@
     return false;
   }
 
-  // 🎯 SHOW ONLY MATCH
-  function filterOnlyTarget() {
-    const elements = document.querySelectorAll("body *");
-
-    elements.forEach(el => {
-      let txt = el.innerText?.trim();
-
-      if (txt && txt !== target) {
-        el.style.display = "none";
-      }
-    });
-  }
-
-  // 🔍 FIND + CLICK (WITH RETRY)
+  // 🔍 FIND + CLICK BUY
   async function findAndClick() {
     const elements = document.querySelectorAll("body *");
 
@@ -147,15 +134,13 @@
     return false;
   }
 
-  // 🔁 LOOP (NO RELOAD, ONLY OTP CLICK)
+  // 🔁 LOOP (NO RELOAD)
   async function loop() {
     while (running) {
 
       clickOtpUpi();
 
       await sleep(800);
-
-      filterOnlyTarget();
 
       let success = await findAndClick();
 
