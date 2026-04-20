@@ -17,10 +17,11 @@
     padding:10px;
     border-radius:10px;
     z-index:999999;
+    font-family:sans-serif;
   `;
 
   box.innerHTML = `
-    <input id="amt" placeholder="Enter amount" style="width:100%;color:black;background:white;margin-bottom:5px;" />
+    <input id="amt" placeholder="Enter amount" style="width:100%;margin-bottom:5px;color:black;background:white;" />
     <button id="start" style="width:100%;background:green;color:white;margin-bottom:5px;">Start</button>
     <button id="stop" style="width:100%;background:red;color:white;margin-bottom:5px;">Stop</button>
     <div id="status">Idle</div>
@@ -44,46 +45,50 @@
     status.innerText = "Stopped";
   };
 
+  // ===== CLICK OTP-UPI =====
   function clickOtpUpi() {
-    document.querySelectorAll(".tab-title").forEach(t => {
-      if (t.innerText.includes("OTP-UPI")) t.click();
+    document.querySelectorAll(".tab-title").forEach(tab => {
+      if (tab.innerText.includes("OTP-UPI")) tab.click();
     });
   }
 
-  // ===== FIND ROWS BASED ON ₹ TEXT =====
+  // ===== FIND MATCHING ROWS =====
   function getRows() {
     const all = document.querySelectorAll("*");
     let rows = [];
 
     all.forEach(el => {
       const text = el.innerText?.trim();
-
       if (!text) return;
 
-      // match ₹100 exactly
       if (text.includes("₹" + target)) {
         const row = el.closest("div");
-        if (row) rows.push(row);
+        if (row && !rows.includes(row)) {
+          rows.push(row);
+        }
       }
     });
 
     return rows;
   }
 
-  // ===== FILTER =====
+  // ===== SAFE FILTER (ONLY AMOUNT ROWS) =====
   function filterRows(rows) {
-    const all = document.querySelectorAll("div");
+    const buttons = document.querySelectorAll("button");
 
-    all.forEach(div => {
-      if (rows.includes(div)) {
-        div.style.display = "";
-      } else if (div.innerText.includes("₹")) {
-        div.style.display = "none";
+    buttons.forEach(btn => {
+      const row = btn.closest("div");
+      if (!row) return;
+
+      const isMatch = rows.includes(row);
+
+      if (row.innerText.includes("₹")) {
+        row.style.display = isMatch ? "" : "none";
       }
     });
   }
 
-  // ===== CLICK =====
+  // ===== CLICK MATCHES =====
   async function clickRows(rows) {
     if (rows.length === 0) return false;
 
@@ -107,9 +112,11 @@
     return false;
   }
 
+  // ===== LOOP =====
   async function loop() {
     while (running) {
       clickOtpUpi();
+
       await sleep(800);
 
       const rows = getRows();
