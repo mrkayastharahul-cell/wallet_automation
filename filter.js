@@ -4,39 +4,75 @@
 
   let running = false;
 
+  // ===== UI =====
   const box = document.createElement("div");
   box.style = `
     position:fixed;
     bottom:20px;
     right:20px;
-    width:200px;
+    width:220px;
     background:#111;
     color:#fff;
-    padding:10px;
-    border-radius:10px;
+    padding:12px;
+    border-radius:12px;
     z-index:999999;
+    font-family:sans-serif;
+    box-shadow:0 0 10px rgba(0,0,0,0.5);
   `;
 
   box.innerHTML = `
-    <div>Target: ₹1000</div>
-    <button id="start">Start</button>
-    <button id="stop">Stop</button>
-    <div id="status">Idle</div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+      <span style="font-weight:bold;">Auto Buy</span>
+      <span id="light" style="width:10px;height:10px;border-radius:50%;background:red;"></span>
+    </div>
+
+    <div style="font-size:13px;margin-bottom:8px;">Target: ₹1000</div>
+
+    <button id="start" style="
+      width:100%;
+      padding:6px;
+      background:green;
+      color:#fff;
+      border:none;
+      border-radius:6px;
+      margin-bottom:6px;
+      cursor:pointer;
+    ">Start</button>
+
+    <button id="stop" style="
+      width:100%;
+      padding:6px;
+      background:red;
+      color:#fff;
+      border:none;
+      border-radius:6px;
+      cursor:pointer;
+    ">Stop</button>
+
+    <div id="status" style="margin-top:6px;font-size:12px;">Idle</div>
   `;
 
   document.body.appendChild(box);
+
   const status = document.getElementById("status");
+  const light = document.getElementById("light");
 
   document.getElementById("start").onclick = () => {
     running = true;
     status.innerText = "Running";
+    light.style.background = "lime";
     loop();
   };
 
   document.getElementById("stop").onclick = () => {
     running = false;
     status.innerText = "Stopped";
+    light.style.background = "red";
   };
+
+  function beep() {
+    new Audio("https://actions.google.com/sounds/v1/alarms/beep_short.ogg").play();
+  }
 
   function clickOtpUpi() {
     document.querySelectorAll(".tab-title").forEach(t => {
@@ -57,9 +93,9 @@
 
   function highlight(el) {
     el.style.outline = "3px solid red";
+    el.style.background = "rgba(255,0,0,0.2)";
   }
 
-  // 🔥 FIND BUY TEXT (REAL TARGET)
   function findBuyText(startEl) {
     let current = startEl;
 
@@ -77,25 +113,19 @@
   async function clickTargets(targets) {
     if (targets.length === 0) return false;
 
-    await sleep(1000);
-
     for (let t of targets) {
       highlight(t);
 
       let buyText = findBuyText(t);
 
       if (buyText) {
-        buyText.scrollIntoView({ block: "center" });
-
-        // 🔥 CLICK REAL TARGET
         buyText.click();
 
-        await sleep(1200);
-
         if (document.body.innerText.includes("Select Payment Method")) {
-          new Audio("https://actions.google.com/sounds/v1/alarms/beep_short.ogg").play();
+          beep();
           running = false;
           status.innerText = "Stopped (Payment Page)";
+          light.style.background = "red";
           return true;
         }
       }
@@ -108,15 +138,17 @@
     while (running) {
 
       if (document.body.innerText.includes("Select Payment Method")) {
+        beep();
         running = false;
-        status.innerText = "Stopped";
+        status.innerText = "Stopped (Payment Page)";
+        light.style.background = "red";
         return;
       }
 
       clickOtpUpi();
       clickLarge();
 
-      await sleep(800);
+      await sleep(200);
 
       let targets = findTargets();
 
@@ -125,7 +157,7 @@
         if (success) return;
       }
 
-      await sleep(800);
+      await sleep(200);
     }
   }
 
