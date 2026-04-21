@@ -42,35 +42,32 @@
     status.innerText = "Stopped";
   };
 
-  function playBeep() {
+  function beep() {
     new Audio("https://actions.google.com/sounds/v1/alarms/beep_short.ogg").play();
   }
 
-  // ===== CLICK OTP-UPI =====
   function clickOtpUpi() {
-    document.querySelectorAll(".tab-title").forEach(tab => {
-      if (tab.innerText.includes("OTP-UPI")) tab.click();
+    document.querySelectorAll(".tab-title").forEach(t => {
+      if (t.innerText.includes("OTP-UPI")) t.click();
     });
   }
 
-  // ===== CLICK LARGE =====
   function clickLarge() {
     document.querySelectorAll(".txt").forEach(el => {
       if (el.innerText.trim() === "Large") el.click();
     });
   }
 
-  // ===== FIND ₹1000 ROWS =====
+  // ===== FIND ROWS =====
   function getRows() {
-    const buttons = document.querySelectorAll(".van-button--primary");
+    const btns = document.querySelectorAll(".van-button--primary");
     let rows = [];
 
-    buttons.forEach(btn => {
+    btns.forEach(btn => {
       const row = btn.closest("div");
       if (!row) return;
 
-      const text = row.innerText;
-      const nums = text.match(/\d+/g);
+      const nums = row.innerText.match(/\d+/g);
       if (!nums) return;
 
       if (nums.includes(target)) {
@@ -83,9 +80,9 @@
 
   // ===== FILTER =====
   function filterRows(rows) {
-    const buttons = document.querySelectorAll(".van-button--primary");
+    const btns = document.querySelectorAll(".van-button--primary");
 
-    buttons.forEach(btn => {
+    btns.forEach(btn => {
       const row = btn.closest("div");
       if (!row) return;
 
@@ -95,31 +92,42 @@
     });
   }
 
-  // ===== CLICK BUY (INNER TEXT ELEMENT) =====
+  // ===== VISUAL CLICK =====
+  function highlight(row) {
+    row.style.outline = "3px solid red";
+    row.style.background = "rgba(255,0,0,0.2)";
+  }
+
+  function realClick(el) {
+    el.dispatchEvent(new MouseEvent("mousedown", { bubbles: true }));
+    el.dispatchEvent(new MouseEvent("mouseup", { bubbles: true }));
+    el.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+  }
+
+  // ===== CLICK FAST =====
   async function clickRows(rows) {
     if (rows.length === 0) return false;
 
+    await sleep(1000); // wait 1 sec as you wanted
+
     for (let row of rows) {
-      let buyText = row.querySelector(".van-button__text");
+      highlight(row);
 
-      if (buyText && buyText.innerText.trim() === "Buy") {
+      let btn = row.querySelector(".van-button__text");
 
-        // Real click on inner element
-        buyText.dispatchEvent(new MouseEvent("mousedown", { bubbles: true }));
-        buyText.dispatchEvent(new MouseEvent("mouseup", { bubbles: true }));
-        buyText.dispatchEvent(new MouseEvent("click", { bubbles: true }));
-
-        await sleep(1500);
-
-        if (document.body.innerText.includes("Select Payment Method")) {
-          // 🔔 Beep ONLY on success
-          playBeep();
-
-          running = false;
-          status.innerText = "Stopped (Payment Page)";
-          return true;
-        }
+      if (btn && btn.innerText.trim() === "Buy") {
+        realClick(btn);
       }
+    }
+
+    // check after clicking burst
+    await sleep(1500);
+
+    if (document.body.innerText.includes("Select Payment Method")) {
+      beep();
+      running = false;
+      status.innerText = "Stopped (Payment Page)";
+      return true;
     }
 
     return false;
@@ -130,14 +138,14 @@
     while (running) {
 
       if (document.body.innerText.includes("Select Payment Method")) {
-        playBeep();
+        beep();
         running = false;
         status.innerText = "Stopped (Payment Page)";
         return;
       }
 
       clickOtpUpi();
-      clickLarge(); // instant
+      clickLarge();
 
       await sleep(800);
 
@@ -150,7 +158,7 @@
         if (success) return;
       }
 
-      await sleep(1000);
+      await sleep(800);
     }
   }
 
