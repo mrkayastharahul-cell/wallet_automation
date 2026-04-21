@@ -58,7 +58,7 @@
 
   // ===== FIND ₹1000 ROWS =====
   function getRows() {
-    const buttons = document.querySelectorAll("button");
+    const buttons = document.querySelectorAll(".van-button--primary");
     let rows = [];
 
     buttons.forEach(btn => {
@@ -66,10 +66,10 @@
       if (!row) return;
 
       const text = row.innerText;
-      const numbers = text.match(/\d+/g);
-      if (!numbers) return;
+      const nums = text.match(/\d+/g);
+      if (!nums) return;
 
-      if (numbers.some(n => n === target)) {
+      if (nums.includes(target)) {
         if (!rows.includes(row)) rows.push(row);
       }
     });
@@ -79,7 +79,7 @@
 
   // ===== FILTER =====
   function filterRows(rows) {
-    const buttons = document.querySelectorAll("button");
+    const buttons = document.querySelectorAll(".van-button--primary");
 
     buttons.forEach(btn => {
       const row = btn.closest("div");
@@ -93,8 +93,9 @@
 
   // ===== REAL CLICK =====
   function realClick(el) {
-    el.dispatchEvent(new MouseEvent("mousedown", { bubbles: true }));
-    el.dispatchEvent(new MouseEvent("mouseup", { bubbles: true }));
+    el.click();
+    el.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true }));
+    el.dispatchEvent(new PointerEvent("pointerup", { bubbles: true }));
     el.dispatchEvent(new MouseEvent("click", { bubbles: true }));
   }
 
@@ -105,8 +106,7 @@
     new Audio("https://actions.google.com/sounds/v1/alarms/beep_short.ogg").play();
 
     for (let row of rows) {
-      let btn = Array.from(row.querySelectorAll("button"))
-        .find(b => b.innerText.includes("Buy"));
+      let btn = row.querySelector(".van-button--primary");
 
       if (btn) {
         realClick(btn);
@@ -135,9 +135,9 @@
       }
 
       clickOtpUpi();
-      clickLarge(); // ⚡ instant (no delay)
+      clickLarge(); // instant
 
-      await sleep(800); // wait only for results
+      await sleep(800);
 
       const rows = getRows();
 
