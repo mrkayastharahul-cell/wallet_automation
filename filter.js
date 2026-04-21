@@ -52,18 +52,24 @@
     });
   }
 
-  // ===== FIND MATCHING ROWS =====
+  // ===== STRICT MATCH (ONLY EXACT AMOUNT) =====
   function getRows() {
-    const all = document.querySelectorAll("*");
+    const buttons = document.querySelectorAll("button");
     let rows = [];
 
-    all.forEach(el => {
-      const text = el.innerText?.trim();
-      if (!text) return;
+    buttons.forEach(btn => {
+      const row = btn.closest("div");
+      if (!row) return;
 
-      if (text.includes("₹" + target)) {
-        const row = el.closest("div");
-        if (row && !rows.includes(row)) {
+      const text = row.innerText;
+
+      // extract numbers
+      const numbers = text.match(/\d+/g);
+      if (!numbers) return;
+
+      // STRICT match only exact target (e.g. 1000 only)
+      if (numbers.some(n => n === target)) {
+        if (!rows.includes(row)) {
           rows.push(row);
         }
       }
@@ -103,7 +109,6 @@
 
         await sleep(1200);
 
-        // 🔴 HARD STOP ON PAYMENT PAGE
         if (document.body.innerText.includes("Select Payment Method")) {
           running = false;
           status.innerText = "Stopped (Payment Page)";
@@ -119,7 +124,6 @@
   async function loop() {
     while (running) {
 
-      // 🔴 SAFETY STOP
       if (document.body.innerText.includes("Select Payment Method")) {
         running = false;
         status.innerText = "Stopped (Payment Page)";
