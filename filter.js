@@ -28,26 +28,9 @@
 
     <div style="font-size:13px;margin-bottom:8px;">Target: ₹1000</div>
 
-    <button id="start" style="
-      width:100%;
-      padding:6px;
-      background:green;
-      color:#fff;
-      border:none;
-      border-radius:6px;
-      margin-bottom:6px;
-      cursor:pointer;
-    ">Start</button>
+    <button id="start" style="width:100%;padding:6px;background:green;color:#fff;border:none;border-radius:6px;margin-bottom:6px;cursor:pointer;">Start</button>
 
-    <button id="stop" style="
-      width:100%;
-      padding:6px;
-      background:red;
-      color:#fff;
-      border:none;
-      border-radius:6px;
-      cursor:pointer;
-    ">Stop</button>
+    <button id="stop" style="width:100%;padding:6px;background:red;color:#fff;border:none;border-radius:6px;cursor:pointer;">Stop</button>
 
     <div id="status" style="margin-top:6px;font-size:12px;">Idle</div>
   `;
@@ -86,9 +69,13 @@
     });
   }
 
+  // ===== STRICT ₹1000 MATCH =====
   function findTargets() {
     return Array.from(document.querySelectorAll(".ml10"))
-      .filter(el => el.innerText.includes("₹1000"));
+      .filter(el => {
+        const text = el.innerText.replace(/\s+/g, '');
+        return /₹1000(?!\d)/.test(text);
+      });
   }
 
   function highlight(el) {
