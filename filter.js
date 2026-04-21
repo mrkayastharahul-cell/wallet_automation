@@ -3,9 +3,8 @@
   window.__FILTER__ = true;
 
   let running = false;
-  const target = "1000";
 
-  // ===== UI =====
+  // UI
   const box = document.createElement("div");
   box.style = `
     position:fixed;
@@ -17,18 +16,16 @@
     padding:10px;
     border-radius:10px;
     z-index:999999;
-    font-family:sans-serif;
   `;
 
   box.innerHTML = `
-    <div style="margin-bottom:5px;font-weight:bold;">Target: ₹1000</div>
-    <button id="start" style="width:100%;background:green;color:white;margin-bottom:5px;">Start</button>
-    <button id="stop" style="width:100%;background:red;color:white;margin-bottom:5px;">Stop</button>
+    <div>Target: ₹1000</div>
+    <button id="start">Start</button>
+    <button id="stop">Stop</button>
     <div id="status">Idle</div>
   `;
 
   document.body.appendChild(box);
-
   const status = document.getElementById("status");
 
   document.getElementById("start").onclick = () => {
@@ -42,10 +39,6 @@
     status.innerText = "Stopped";
   };
 
-  function beep() {
-    new Audio("https://actions.google.com/sounds/v1/alarms/beep_short.ogg").play();
-  }
-
   function clickOtpUpi() {
     document.querySelectorAll(".tab-title").forEach(t => {
       if (t.innerText.includes("OTP-UPI")) t.click();
@@ -58,71 +51,52 @@
     });
   }
 
-  // ===== FIND ROWS =====
-  function getRows() {
-    const btns = document.querySelectorAll(".van-button--primary");
-    let rows = [];
+  // 🔥 FIND ₹1000 BLOCKS
+  function findTargets() {
+    const blocks = document.querySelectorAll(".ml10");
+    let targets = [];
 
-    btns.forEach(btn => {
-      const row = btn.closest("div");
-      if (!row) return;
-
-      const nums = row.innerText.match(/\d+/g);
-      if (!nums) return;
-
-      if (nums.includes(target)) {
-        if (!rows.includes(row)) rows.push(row);
+    blocks.forEach(b => {
+      if (b.innerText.includes("₹1000")) {
+        targets.push(b);
       }
     });
 
-    return rows;
+    return targets;
   }
 
-  // ===== FILTER =====
-  function filterRows(rows) {
-    const btns = document.querySelectorAll(".van-button--primary");
-
-    btns.forEach(btn => {
-      const row = btn.closest("div");
-      if (!row) return;
-
-      if (row.innerText.includes("₹")) {
-        row.style.display = rows.includes(row) ? "" : "none";
-      }
-    });
+  function highlight(el) {
+    el.style.outline = "3px solid red";
   }
 
-  // ===== VISUAL =====
-  function highlight(row) {
-    row.style.outline = "3px solid red";
-    row.style.background = "rgba(255,0,0,0.2)";
-  }
+  // 🔥 CLICK FIXED
+  async function clickTargets(targets) {
+    if (targets.length === 0) return false;
 
-  // ===== CLICK BUY (FINAL FIX) =====
-  async function clickRows(rows) {
-    if (rows.length === 0) return false;
+    await sleep(1000);
 
-    await sleep(1000); // wait after filtering
+    for (let t of targets) {
+      highlight(t);
 
-    for (let row of rows) {
-      highlight(row);
+      // 👉 go to shared parent
+      let parent = t.parentElement;
 
-      let buttons = row.querySelectorAll("button.van-button--primary");
+      if (!parent) continue;
 
-      for (let btn of buttons) {
-        if (btn.offsetParent !== null) { // visible check
-          btn.scrollIntoView({ block: "center" });
+      // 👉 find BUY in sibling
+      let btn = parent.querySelector("button.van-button--primary");
 
-          btn.click(); // 🔥 same as manual click
+      if (btn) {
+        btn.scrollIntoView({ block: "center" });
+        btn.click();
 
-          await sleep(1200);
+        await sleep(1200);
 
-          if (document.body.innerText.includes("Select Payment Method")) {
-            beep();
-            running = false;
-            status.innerText = "Stopped (Payment Page)";
-            return true;
-          }
+        if (document.body.innerText.includes("Select Payment Method")) {
+          new Audio("https://actions.google.com/sounds/v1/alarms/beep_short.ogg").play();
+          running = false;
+          status.innerText = "Stopped (Payment Page)";
+          return true;
         }
       }
     }
@@ -130,14 +104,12 @@
     return false;
   }
 
-  // ===== LOOP =====
   async function loop() {
     while (running) {
 
       if (document.body.innerText.includes("Select Payment Method")) {
-        beep();
         running = false;
-        status.innerText = "Stopped (Payment Page)";
+        status.innerText = "Stopped";
         return;
       }
 
@@ -146,12 +118,10 @@
 
       await sleep(800);
 
-      const rows = getRows();
+      let targets = findTargets();
 
-      if (rows.length > 0) {
-        filterRows(rows);
-
-        let success = await clickRows(rows);
+      if (targets.length > 0) {
+        let success = await clickTargets(targets);
         if (success) return;
       }
 
