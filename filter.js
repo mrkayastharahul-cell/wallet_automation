@@ -4,7 +4,6 @@
 
   let running = false;
 
-  // UI
   const box = document.createElement("div");
   box.style = `
     position:fixed;
@@ -51,25 +50,30 @@
     });
   }
 
-  // 🔥 FIND ₹1000 BLOCKS
   function findTargets() {
-    const blocks = document.querySelectorAll(".ml10");
-    let targets = [];
-
-    blocks.forEach(b => {
-      if (b.innerText.includes("₹1000")) {
-        targets.push(b);
-      }
-    });
-
-    return targets;
+    return Array.from(document.querySelectorAll(".ml10"))
+      .filter(el => el.innerText.includes("₹1000"));
   }
 
   function highlight(el) {
     el.style.outline = "3px solid red";
   }
 
-  // 🔥 CLICK FIXED
+  // 🔥 FIND BUY TEXT (REAL TARGET)
+  function findBuyText(startEl) {
+    let current = startEl;
+
+    while (current && current !== document.body) {
+      let btn = current.querySelector(".van-button__text");
+      if (btn && btn.innerText.trim() === "Buy") {
+        return btn;
+      }
+      current = current.parentElement;
+    }
+
+    return null;
+  }
+
   async function clickTargets(targets) {
     if (targets.length === 0) return false;
 
@@ -78,17 +82,13 @@
     for (let t of targets) {
       highlight(t);
 
-      // 👉 go to shared parent
-      let parent = t.parentElement;
+      let buyText = findBuyText(t);
 
-      if (!parent) continue;
+      if (buyText) {
+        buyText.scrollIntoView({ block: "center" });
 
-      // 👉 find BUY in sibling
-      let btn = parent.querySelector("button.van-button--primary");
-
-      if (btn) {
-        btn.scrollIntoView({ block: "center" });
-        btn.click();
+        // 🔥 CLICK REAL TARGET
+        buyText.click();
 
         await sleep(1200);
 
