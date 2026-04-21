@@ -98,57 +98,33 @@
     row.style.background = "rgba(255,0,0,0.2)";
   }
 
-  // ===== REAL CLICK (FINAL FIX) =====
-  function realClick(el) {
-    const rect = el.getBoundingClientRect();
-    const x = rect.left + rect.width / 2;
-    const y = rect.top + rect.height / 2;
-
-    try {
-      el.dispatchEvent(new TouchEvent("touchstart", {
-        bubbles: true,
-        touches: [{ clientX: x, clientY: y }]
-      }));
-
-      el.dispatchEvent(new TouchEvent("touchend", {
-        bubbles: true,
-        changedTouches: [{ clientX: x, clientY: y }]
-      }));
-    } catch {}
-
-    el.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true }));
-    el.dispatchEvent(new PointerEvent("pointerup", { bubbles: true }));
-
-    el.dispatchEvent(new MouseEvent("mousedown", { bubbles: true }));
-    el.dispatchEvent(new MouseEvent("mouseup", { bubbles: true }));
-    el.dispatchEvent(new MouseEvent("click", { bubbles: true }));
-
-    el.click();
-  }
-
-  // ===== CLICK BUY =====
+  // ===== CLICK BUY (FINAL FIX) =====
   async function clickRows(rows) {
     if (rows.length === 0) return false;
 
-    await sleep(1000); // wait before clicking
+    await sleep(1000); // wait after filtering
 
     for (let row of rows) {
       highlight(row);
 
-      let btn = row.querySelector(".van-button--primary");
+      let buttons = row.querySelectorAll("button.van-button--primary");
 
-      if (btn) {
-        realClick(btn);
+      for (let btn of buttons) {
+        if (btn.offsetParent !== null) { // visible check
+          btn.scrollIntoView({ block: "center" });
+
+          btn.click(); // 🔥 same as manual click
+
+          await sleep(1200);
+
+          if (document.body.innerText.includes("Select Payment Method")) {
+            beep();
+            running = false;
+            status.innerText = "Stopped (Payment Page)";
+            return true;
+          }
+        }
       }
-    }
-
-    await sleep(1500);
-
-    if (document.body.innerText.includes("Select Payment Method")) {
-      beep();
-      running = false;
-      status.innerText = "Stopped (Payment Page)";
-      return true;
     }
 
     return false;
