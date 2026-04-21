@@ -97,7 +97,6 @@
     return null;
   }
 
-  // ===== CLICK + INSTANT STOP =====
   async function clickTargets(targets) {
     if (targets.length === 0) return false;
 
@@ -109,39 +108,26 @@
       if (buyText) {
         buyText.click();
 
-        // 🔴 STOP immediately after click
-        running = false;
-        status.innerText = "Clicked → Waiting";
-        light.style.background = "orange";
-
-        await sleep(300);
-
-        if (
-          document.body.innerText.includes("Select Payment Method") ||
-          !document.querySelector(".van-button__text")
-        ) {
+        if (document.body.innerText.includes("Select Payment Method")) {
           beep();
+          running = false;
           status.innerText = "Stopped (Payment Page)";
           light.style.background = "red";
+          return true;
         }
-
-        return true;
       }
     }
 
     return false;
   }
 
-  // ===== LOOP =====
   async function loop() {
     while (running) {
 
-      if (
-        document.body.innerText.includes("Select Payment Method") ||
-        !document.querySelector(".van-button__text")
-      ) {
+      if (document.body.innerText.includes("Select Payment Method")) {
+        beep();
         running = false;
-        status.innerText = "Stopped";
+        status.innerText = "Stopped (Payment Page)";
         light.style.background = "red";
         return;
       }
@@ -154,8 +140,8 @@
       let targets = findTargets();
 
       if (targets.length > 0) {
-        await clickTargets(targets);
-        return; // 🔴 never auto-loop after click
+        let success = await clickTargets(targets);
+        if (success) return;
       }
 
       await sleep(200);
