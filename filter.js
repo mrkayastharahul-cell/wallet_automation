@@ -97,20 +97,6 @@
     return null;
   }
 
-  // ===== CLICK FREO =====
-  function clickFreo() {
-    const all = document.querySelectorAll("*");
-
-    for (let el of all) {
-      if (el.innerText && el.innerText.trim() === "Freo") {
-        el.click();
-        return true;
-      }
-    }
-    return false;
-  }
-
-  // ===== CLICK BUY + WAIT DISAPPEAR =====
   async function clickTargets(targets) {
     if (targets.length === 0) return false;
 
@@ -122,23 +108,10 @@
       if (buyText) {
         buyText.click();
 
-        // wait for Buy to disappear
-        let disappeared = false;
-
-        for (let i = 0; i < 10; i++) {
-          await sleep(150);
-
-          if (!document.body.innerText.includes("Buy")) {
-            disappeared = true;
-            break;
-          }
-        }
-
-        if (disappeared) {
-          beep(); // 🔔 sound
-          clickFreo(); // 👉 click Freo
+        if (document.body.innerText.includes("Select Payment Method")) {
+          beep();
           running = false;
-          status.innerText = "Freo Clicked";
+          status.innerText = "Stopped (Payment Page)";
           light.style.background = "red";
           return true;
         }
@@ -148,9 +121,16 @@
     return false;
   }
 
-  // ===== LOOP =====
   async function loop() {
     while (running) {
+
+      if (document.body.innerText.includes("Select Payment Method")) {
+        beep();
+        running = false;
+        status.innerText = "Stopped (Payment Page)";
+        light.style.background = "red";
+        return;
+      }
 
       clickOtpUpi();
       clickLarge();
