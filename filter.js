@@ -3,7 +3,7 @@
   window.__FILTER__ = true;
 
   let running = false;
-  const target = "1000"; // 🔒 permanently locked
+  const target = "1000";
 
   // ===== UI =====
   const box = document.createElement("div");
@@ -52,9 +52,7 @@
   // ===== CLICK LARGE =====
   function clickLarge() {
     document.querySelectorAll(".txt").forEach(el => {
-      if (el.innerText.trim() === "Large") {
-        el.click();
-      }
+      if (el.innerText.trim() === "Large") el.click();
     });
   }
 
@@ -71,10 +69,8 @@
       const numbers = text.match(/\d+/g);
       if (!numbers) return;
 
-      if (numbers.includes(target)) {
-        if (!rows.includes(row)) {
-          rows.push(row);
-        }
+      if (numbers.some(n => n === target)) {
+        if (!rows.includes(row)) rows.push(row);
       }
     });
 
@@ -95,6 +91,13 @@
     });
   }
 
+  // ===== REAL CLICK =====
+  function realClick(el) {
+    el.dispatchEvent(new MouseEvent("mousedown", { bubbles: true }));
+    el.dispatchEvent(new MouseEvent("mouseup", { bubbles: true }));
+    el.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+  }
+
   // ===== CLICK BUY =====
   async function clickRows(rows) {
     if (rows.length === 0) return false;
@@ -106,7 +109,7 @@
         .find(b => b.innerText.includes("Buy"));
 
       if (btn) {
-        btn.click();
+        realClick(btn);
 
         await sleep(1500);
 
@@ -132,10 +135,9 @@
       }
 
       clickOtpUpi();
-      await sleep(800);
+      clickLarge(); // ⚡ instant (no delay)
 
-      clickLarge();
-      await sleep(1200);
+      await sleep(800); // wait only for results
 
       const rows = getRows();
 
