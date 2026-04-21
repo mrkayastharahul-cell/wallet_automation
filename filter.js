@@ -3,7 +3,7 @@
   window.__FILTER__ = true;
 
   let running = false;
-  let target = "";
+  const target = "1000"; // 🔒 permanently locked
 
   // ===== UI =====
   const box = document.createElement("div");
@@ -21,7 +21,7 @@
   `;
 
   box.innerHTML = `
-    <input id="amt" placeholder="Enter amount" style="width:100%;margin-bottom:5px;color:black;background:white;" />
+    <div style="margin-bottom:5px;font-weight:bold;">Target: ₹1000</div>
     <button id="start" style="width:100%;background:green;color:white;margin-bottom:5px;">Start</button>
     <button id="stop" style="width:100%;background:red;color:white;margin-bottom:5px;">Stop</button>
     <div id="status">Idle</div>
@@ -32,9 +32,6 @@
   const status = document.getElementById("status");
 
   document.getElementById("start").onclick = () => {
-    target = document.getElementById("amt").value.trim();
-    if (!target) return alert("Enter amount");
-
     running = true;
     status.innerText = "Running";
     loop();
@@ -52,7 +49,16 @@
     });
   }
 
-  // ===== STRICT MATCH (ONLY EXACT AMOUNT) =====
+  // ===== CLICK LARGE =====
+  function clickLarge() {
+    document.querySelectorAll(".txt").forEach(el => {
+      if (el.innerText.trim() === "Large") {
+        el.click();
+      }
+    });
+  }
+
+  // ===== FIND ₹1000 ROWS =====
   function getRows() {
     const buttons = document.querySelectorAll("button");
     let rows = [];
@@ -62,13 +68,10 @@
       if (!row) return;
 
       const text = row.innerText;
-
-      // extract numbers
       const numbers = text.match(/\d+/g);
       if (!numbers) return;
 
-      // STRICT match only exact target (e.g. 1000 only)
-      if (numbers.some(n => n === target)) {
+      if (numbers.includes(target)) {
         if (!rows.includes(row)) {
           rows.push(row);
         }
@@ -78,7 +81,7 @@
     return rows;
   }
 
-  // ===== FILTER ONLY MATCHED ROWS =====
+  // ===== FILTER =====
   function filterRows(rows) {
     const buttons = document.querySelectorAll("button");
 
@@ -86,15 +89,13 @@
       const row = btn.closest("div");
       if (!row) return;
 
-      const isMatch = rows.includes(row);
-
       if (row.innerText.includes("₹")) {
-        row.style.display = isMatch ? "" : "none";
+        row.style.display = rows.includes(row) ? "" : "none";
       }
     });
   }
 
-  // ===== CLICK MATCHES =====
+  // ===== CLICK BUY =====
   async function clickRows(rows) {
     if (rows.length === 0) return false;
 
@@ -107,7 +108,7 @@
       if (btn) {
         btn.click();
 
-        await sleep(1200);
+        await sleep(1500);
 
         if (document.body.innerText.includes("Select Payment Method")) {
           running = false;
@@ -131,8 +132,10 @@
       }
 
       clickOtpUpi();
-
       await sleep(800);
+
+      clickLarge();
+      await sleep(1200);
 
       const rows = getRows();
 
@@ -140,7 +143,6 @@
         filterRows(rows);
 
         let success = await clickRows(rows);
-
         if (success) return;
       }
 
