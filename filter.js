@@ -42,6 +42,10 @@
     status.innerText = "Stopped";
   };
 
+  function playBeep() {
+    new Audio("https://actions.google.com/sounds/v1/alarms/beep_short.ogg").play();
+  }
+
   // ===== CLICK OTP-UPI =====
   function clickOtpUpi() {
     document.querySelectorAll(".tab-title").forEach(tab => {
@@ -91,29 +95,26 @@
     });
   }
 
-  // ===== REAL CLICK =====
-  function realClick(el) {
-    el.click();
-    el.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true }));
-    el.dispatchEvent(new PointerEvent("pointerup", { bubbles: true }));
-    el.dispatchEvent(new MouseEvent("click", { bubbles: true }));
-  }
-
-  // ===== CLICK BUY =====
+  // ===== CLICK BUY (INNER TEXT ELEMENT) =====
   async function clickRows(rows) {
     if (rows.length === 0) return false;
 
-    new Audio("https://actions.google.com/sounds/v1/alarms/beep_short.ogg").play();
-
     for (let row of rows) {
-      let btn = row.querySelector(".van-button--primary");
+      let buyText = row.querySelector(".van-button__text");
 
-      if (btn) {
-        realClick(btn);
+      if (buyText && buyText.innerText.trim() === "Buy") {
+
+        // Real click on inner element
+        buyText.dispatchEvent(new MouseEvent("mousedown", { bubbles: true }));
+        buyText.dispatchEvent(new MouseEvent("mouseup", { bubbles: true }));
+        buyText.dispatchEvent(new MouseEvent("click", { bubbles: true }));
 
         await sleep(1500);
 
         if (document.body.innerText.includes("Select Payment Method")) {
+          // 🔔 Beep ONLY on success
+          playBeep();
+
           running = false;
           status.innerText = "Stopped (Payment Page)";
           return true;
@@ -129,6 +130,7 @@
     while (running) {
 
       if (document.body.innerText.includes("Select Payment Method")) {
+        playBeep();
         running = false;
         status.innerText = "Stopped (Payment Page)";
         return;
